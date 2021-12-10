@@ -1,11 +1,11 @@
-# Model configuration
+# 模型配置
 
-The configuration process for DyGIE relies on the `jsonnet`-based configuration system for [AllenNLP](https://guide.allennlp.org/using-config-files). For more information on the AllenNLP configuration process in general, take a look at the AllenNLP [guide](https://guide.allennlp.org).
+DyGIE的配置过程依赖于[AllenNLP](https://guide.allennlp.org/using-config-files)的基于`jsonnet`的配置系统。关于AllenNLP配置过程的更多信息，请看AllenNLP的[指南](https://guide.allennlp.org)。
 
-DyGIE adds one layer of complexity on top of this. It factors the configuration into:
+DyGIE在此基础上增加了一层复杂性。它将配置的因数纳入。
 
-- Components that are common to all DyGIE models. These are defined in [template.libsonnet](../training_config/template.libsonnet).
-- Components that are specific to single model trained on a particular dataset. These are contained in the `jsonnet` files in the [training config](../training_config) directory. They use the jsonnet inheritance mechanism to extend the base class defined in `template.libsonnet`.  For more on jsonnet inheritance, see the [jsonnet tutorial](https://jsonnet.org/learning/tutorial.html)
+- 所有DyGIE模型都有的组件。这些被定义在[template.libsonnet](.../training_config/template.libsonnet)。
+- 特定于在特定数据集上训练的单个模型的组件。这些包含在[training config](../training_config)目录下的`jsonnet`文件中。它们使用jsonnet的继承机制来扩展`template.libsonnet`中定义的基类。 关于jsonnet继承的更多信息，请参见[jsonnet教程](https://jsonnet.org/learning/tutorial.html)
 
 ## Table of Contents
 - [Required settings](#required-settings)
@@ -16,38 +16,36 @@ DyGIE adds one layer of complexity on top of this. It factors the configuration 
 
 ## Required settings
 
-The [template.libsonnet](../training_config/template.libsonnet) file leaves three variables unset. These must be set by the inheriting object. For an example of how this works, see [scierc_lightweight.jsonnet](../training_config/scierc_lightweight.jsonnet).
+[template.libsonnet](../training_config/template.libsonnet)文件留下了三个未设置的变量。这些必须由继承对象来设置。关于如何工作的例子，见 [scierc_lightweight.jsonnet](../training_config/scierc_lightweight.jsonnet)。
 
-- `data_paths`: A dict with paths to the train, validation, and test sets.
-- `loss_weights`: Since DyGIE has a multitask objective, the individual losses are combined based on user-determined loss weights.
-- `target_task`: After each epoch, the AllenNLP trainer assesses dev set performance, and saves the model state that achieved the highest performance. Since DyGIE is multitask, the user must specify which task to use as the evaluation target. The options are [`ner`, `rel`, `coref`, and `events`].
+- `data_paths`: 一个带有训练集、验证集和测试集路径的字典。
+- `loss_weights`: 由于DyGIE有一个多任务目标，因此根据用户确定的损失权重，将各个损失结合起来。
+- `target_task`: 在每个epoch之后，AllenNLP训练器会评估开发集的性能，并保存取得最高性能的模型状态。由于DyGIE是多任务的，用户必须指定使用哪个任务作为评估目标。这些选项是 [`ner`, `rel`, `coref`, and `events`].
 
-Note that if you create your own config outside of the `training_config` directory, you'll need to modify the line
+注意，如果你在`training_config`目录外创建自己的配置，你需要修改这一行
 ```jsonnet
 local template = import "template.libsonnet";
 ```
-so that it points to the template file.
+以使其指向模板文件。
 
 
-## Optional settings
+## 可选设置
 
-The user may also specify:
+用户也可以指定：
+- `bert_model`: 一个预训练过的BERT模型的名称，可用 [HuggingFace Transformers](https://huggingface.co/transformers/). The default is `bert-base-cased`.
+- `max_span_width`: 模型所列举的最大跨度长度。在实践中，8个长度表现良好。
+- `cuda_device`: 默认情况下，训练是在CPU上进行的。要在GPU上进行训练，请指定一个设备。
 
-- `bert_model`: The name of a pretrained BERT model available on [HuggingFace Transformers](https://huggingface.co/transformers/). The default is `bert-base-cased`.
-- `max_span_width`: The maximum span length enumerated by the model. In pratice, 8 performs well.
-- `cuda_device`: By default, training is performed on CPU. To train on a GPU, specify a device.
 
-
-## Parallel training
+## 并行训练
 
 TODO
 
-## Changing arbitrary parts of the template
+## 改变模板的其它部分
 
-TODO note that by default coref prop is turned off; need to turn it on here.
+TODO 注意，默认情况下coref prop是关闭的；需要在这里打开它。
 
-
-The jsonnet object inheritance model allows you to modify any (perhaps deeply-nested) field of the base object using `+:` notation; see the jsonnet docs for more detail on this. For example, if you'd like to change the batch size and the learning rate on the optimizer, you could do:
+jsonnet对象继承模型允许你使用`+:`符号来修改基础对象的任何（也许是深度嵌套的）字段；关于这一点，请看jsonnet文档的更多细节。例如，如果你想改变优化器的批次大小和学习率，你可以这样做。
 
 ```jsonnet
 template.DyGIE {
@@ -62,8 +60,8 @@ template.DyGIE {
   }
 }
 ```
+你还可以向基类添加额外的字段。例如，如果你想用现有的单词表来训练一个模型，你可以添加
 
-You can also add additional fields to the base class. For instance, if you'd like to train a model using an existing vocabulary you could add
 ```jsonnet
 template.DyGIE {
   ...
@@ -74,9 +72,9 @@ template.DyGIE {
 }
 ```
 
-## Removing pretrained BERT embeddings (during debugging, for instance).
+## 移除预训练的BERT嵌入（例如在调试期间）。
 
-Add these lines to the relevant `.jsonnet` file:
+在相关的`.jsonnet`文件中添加这些行。
 
 ```jsonnet
 dataset_reader +: {
@@ -98,7 +96,7 @@ model :+ {
 }
 ```
 
-## A full example
+## 完整示例
 
 ```jsonnet
 local template = import "template.libsonnet";

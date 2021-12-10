@@ -1,6 +1,6 @@
 # Data
 
-We provide details on the data preprocessing for each of the datasets available here.
+我们在此提供了每个数据集的数据预处理的细节。
 
 ## Table of contents
 
@@ -10,15 +10,15 @@ We provide details on the data preprocessing for each of the datasets available 
 - [Formatting a new dataset](#formatting-a-new-dataset)
 - [Preprocessing details for existing datasets](#preprocesing-details-for-existing-datasets)
 
-## Data format
+## 数据格式
 
-After preprocessing, all the datasets will be formatted like the [SciERC dataset](http://nlp.cs.washington.edu/sciIE/). After downloading the data, you can look at `data/scierc/normalized_data/json/train.json` as an example. Each line in the dataset is a JSON representation of a document (technically, the files should be given the `.jsonl` extension since each line is a JSON object, sorry for the confusion).
+在预处理之后，所有的数据集都将被格式化为[SciERC dataset](http://nlp.cs.washington.edu/sciIE/)。下载数据后，你可以看一下`data/scierc/normalized_data/json/train.json`作为例子。数据集中的每一行都是一个文件的JSON表示（技术上讲，文件应该被赋予`.jsonl`扩展名，因为每一行都是一个JSON对象，抱歉造成了混淆）。
 
-### Mandatory fields
+### 必须填写的字段
 
-- `doc_key`: A unique string identifier for the document.
-- `dataset`: A string identifier for the dataset this document comes from. For more on this field, see the document on [multi-datset training](model.md)
-- `sentences`: The senteces in the document, written as a nested list of tokens. For instance,
+- `doc_key`: 文件的唯一字符串标识符。
+- `dataset`: 该文件来自的数据集的一个字符串标识符。关于这个字段的更多信息，请参见关于 [multi-datset training](model.md)
+- `sentences`: 文档中的句子，写成一个嵌套的token列表。比如说。
   ```json
   [
     ["Seattle", "is", "a", "rainy", "city", "."],

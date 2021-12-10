@@ -28,11 +28,11 @@
   ```
   Empty strings (`""`) are not allowed as entries in sentences; the reader will raise an error if it encounters these.
 
-### Optional annotation fields
+### 可选的标注字段
 
-- `weight`: When training, multiply the loss for the document by this weight (a float). This is useful when combining datasets of different sizes, or when combining weakly-labeled data with gold annotations.
+- `weight`: 训练时，将文档的损失乘以这个权重（一个浮点数）。在结合不同大小的数据集时，或者在结合弱标注数据和glod标注时，这很有用。
 
-- `ner`: The named entities in the document, written as a nested list - one sublist per sentence. Each list entry is of the form `[start_tok, end_tok, label]`. The `start_tok` and `end_tok` token indices are with respect to the _document_, not the sentence. For instance the entities in the sentence above might be:
+- `ner`: 文件中的命名实体，写成一个嵌套的列表--每句有一个子列表。每个列表条目的形式是`[start_tok, end_tok, label]`。`start_tok`和`end_tok`标注的索引是关于_文档_的，而不是关于句子的。例如，上面的句子中的实体可能是:
   ```json
   [
     [[0, 0, "City"]],

@@ -1,8 +1,6 @@
 # USAGE: `bash train.sh [config_name]`
 #
-# The `config_name` is the name of one of the `jsonnet` config files in the
-# `training_config` directory, for instance `scierc`. The result of training
-# will be placed under `models/[config_name]`.
+# `config_name`是`training_config`目录下的一个`jsonnet`配置文件的名称，例如`scierc`。训练的结果将被放在`models/[config_name]`下。
 
 config_name=$1
 

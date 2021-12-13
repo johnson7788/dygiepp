@@ -85,7 +85,8 @@ class NERTagger(Model):
 
         # Shape: (Batch size, Number of Spans, Span Embedding Size)
         # span_embeddings
-
+        if metadata.dataset == None:
+            metadata.dataset == "scierc"
         self._active_namespace = f"{metadata.dataset}__ner_labels"
         scorer = self._ner_scorers[self._active_namespace]
 

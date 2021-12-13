@@ -30,27 +30,27 @@ class DyGIE(Model):
 
     Parameters
     ----------
-    vocab : ``Vocabulary``
+    vocab : ``Vocabulary``  从预训练模型加载的vocab
     text_field_embedder : ``TextFieldEmbedder``
         Used to embed the ``text`` ``TextField`` we get as input to the model.
     context_layer : ``Seq2SeqEncoder``
-        This layer incorporates contextual information for each word in the document.
+        这一层包含了文件中每个词的上下文信息。
     feature_size: ``int``
-        The embedding size for all the embedded features, such as distances or span widths.
+        所有嵌入特征的嵌入尺寸，如距离或跨度宽度。
     submodule_params: ``TODO(dwadden)``
-        A nested dictionary specifying parameters to be passed on to initialize submodules.
+        一个嵌套的字典，指定要传递给子模块初始化的参数。
     max_span_width: ``int``
-        The maximum width of candidate spans.
+        候选跨度的最大宽度。
     target_task: ``str``:
-        The task used to make early stopping decisions.
+        用于作出早期停止决定的任务。
     initializer : ``InitializerApplicator``, optional (default=``InitializerApplicator()``)
-        Used to initialize the model parameters.
+        用于初始化模型参数。
     module_initializer : ``InitializerApplicator``, optional (default=``InitializerApplicator()``)
-        Used to initialize the individual modules.
+        用来初始化各个模块。
     regularizer : ``RegularizerApplicator``, optional (default=``None``)
-        If provided, will be used to calculate the regularization penalty during training.
-    display_metrics: ``List[str]``. A list of the metrics that should be printed out during model
-        training.
+        如果提供，将用于计算训练期间的正则化惩罚。
+    display_metrics: ``List[str]``.  在模型训练期间应该打印出来的指标列表
+        .
     """
 
     def __init__(self,
@@ -70,20 +70,30 @@ class DyGIE(Model):
 
         ####################
 
-        # Create span extractor.
+        # 创建一个 span 提取器.
         self._endpoint_span_extractor = EndpointSpanExtractor(
             embedder.get_output_dim(),
             combination="x,y",
             num_width_embeddings=max_span_width,
             span_width_embedding_dim=feature_size,
             bucket_widths=False)
-
+        """
+        将跨度表示为其端点的嵌入的组合。此外，跨度的宽度可以被嵌入并拼接到最终的组合上。
+        假设`x = span_start_embeddings`和`y = span_end_embeddings`，支持以下类型的表示。
+       `x`, `y`, `x*y`, `x+y`, `x-y`, `x/y`, 其中每个二进制运算都是按元素进行的。 你可以列出你想要的组合，以逗号分隔。
+        例如，你可以给`x,y,x*y`作为这个类的`组合`参数。
+        然后计算出的相似性函数将是`[x; y; x*y]`，然后可以选择与span的宽度的嵌入式表示相拼接。
+        注册为`SpanExtractor`，名称为 "endpoint"。
+        """
         ####################
 
         # Set parameters.
         self._embedder = embedder
+        # 配置文件中的损失的权重 scierc.jsonnet
         self._loss_weights = loss_weights
+        # 最大span宽度
         self._max_span_width = max_span_width
+        # 获取任务显示的metric
         self._display_metrics = self._get_display_metrics(target_task)
         token_emb_dim = self._embedder.get_output_dim()
         span_emb_dim = self._endpoint_span_extractor.get_output_dim()
@@ -140,8 +150,7 @@ class DyGIE(Model):
     @staticmethod
     def _get_display_metrics(target_task):
         """
-        The `target` is the name of the task used to make early stopping decisions. Show metrics
-        related to this task.
+        target 是用于做出早期停止决定的任务的名称。显示与该任务相关的指标。
         """
         lookup = {
             "ner": [f"MEAN__{name}" for name in

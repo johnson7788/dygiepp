@@ -2,7 +2,7 @@ local template = import "template.libsonnet";
 
 template.DyGIE {
   bert_model: "roberta-base",
-  cuda_device: 3,
+  cuda_device: 0,
   max_span_width: std.parseInt(std.extVar('max_span_width')),
   data_paths: {
     train: "data/ace-event/collated-data/default-settings/json/train.json",

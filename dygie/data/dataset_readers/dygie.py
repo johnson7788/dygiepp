@@ -114,7 +114,12 @@ class DyGIEReader(DatasetReader):
         return trigger_labels, arguments, argument_indices
 
     def _process_sentence(self, sent: Sentence, dataset: str):
-        # Get the sentence text and define the `text_field`.
+        """
+        获取句子文本并定义 "text_field"。
+        """
+        #dataset不能为空，这里是有问题的
+        if dataset is None:
+            dataset = "scierc"
         assert dataset, "dataset字段没有传过来，不能为None，请检查"
         sentence_text = [self._normalize_word(word) for word in sent.text]
         text_field = TextField([Token(word) for word in sentence_text], self._token_indexers)

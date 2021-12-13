@@ -2,7 +2,7 @@ local template = import "template.libsonnet";
 
 template.DyGIE {
   bert_model: "microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract",
-  cuda_device: 1,
+  cuda_device: 0,
   data_paths: {
     train: "data/genia/collated-data/json-ner/train.json",
     validation: "data/genia/collated-data/json-ner/dev.json",

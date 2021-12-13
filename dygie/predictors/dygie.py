@@ -43,7 +43,7 @@ class DyGIEPredictor(Predictor):
     @overrides
     def predict_instance(self, instance):
         """
-        An instance is an entire document, represented as a list of sentences.
+        一个实例是一个完整的文件，以句子列表的形式表示。
         """
         model = self._model
         cuda_device = model._get_prediction_device()

@@ -115,6 +115,7 @@ class DyGIEReader(DatasetReader):
 
     def _process_sentence(self, sent: Sentence, dataset: str):
         # Get the sentence text and define the `text_field`.
+        assert dataset, "dataset字段没有传过来，不能为None，请检查"
         sentence_text = [self._normalize_word(word) for word in sent.text]
         text_field = TextField([Token(word) for word in sentence_text], self._token_indexers)
 

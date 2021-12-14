@@ -114,7 +114,7 @@ class DyGIE(Model):
                                           span_emb_dim=span_emb_dim,
                                           feature_size=feature_size,
                                           params=modules.pop("ner"))
-        # 推理模块
+        # 指代关系模块
         self._coref = CorefResolver.from_params(vocab=vocab,
                                                 make_feedforward=make_feedforward,
                                                 span_emb_dim=span_emb_dim,
@@ -225,28 +225,28 @@ class DyGIE(Model):
         span_mask = (spans[:, :, 0] >= 0).float()  # (n_sents, max_n_spans)
         # SpanFields在被用作填充时返回 - 1。由于我们在参加由这些索引生成的跨度表示时，根据跨度宽度进行了一些比较，我们需要它们 <= 0。这只与我们在剪枝阶段后考虑的跨度数量 >= 跨度总数的边缘情况有关，因为在这种情况下，我们有可能考虑一个被mask的跨度。
         spans = F.relu(spans.float()).long()  # (n_sents, max_n_spans, 2)
-
+        # text_embeddings： 【4，37，768】， spans 【4，268，2】
         # Shape: (batch_size, num_spans, 2 * encoding_dim + feature_size)
         span_embeddings = self._endpoint_span_extractor(text_embeddings, spans)
 
-        # Make calls out to the modules to get results.
+        # 保存损失
         output_coref = {'loss': 0}
         output_ner = {'loss': 0}
         output_relation = {'loss': 0}
         output_events = {'loss': 0}
 
-        # Prune and compute span representations for coreference module
+        # 为指代关系模块修剪和计算跨度表示
         if self._loss_weights["coref"] > 0 or self._coref.coref_prop > 0:
             output_coref, coref_indices = self._coref.compute_representations(
                 spans, span_mask, span_embeddings, sentence_lengths, coref_labels, metadata)
 
-        # Propagation of global information to enhance the span embeddings
+        # 传播全局信息以加强跨度嵌入
         if self._coref.coref_prop > 0:
             output_coref = self._coref.coref_propagation(output_coref)
             span_embeddings = self._coref.update_spans(
                 output_coref, span_embeddings, coref_indices)
 
-        # Make predictions and compute losses for each module
+        # 对每个模块进行预测并计算损失
         if self._loss_weights['ner'] > 0:
             output_ner = self._ner(
                 spans, span_mask, span_embeddings, sentence_lengths, ner_labels, metadata)
@@ -259,20 +259,19 @@ class DyGIE(Model):
                 spans, span_mask, span_embeddings, sentence_lengths, relation_labels, metadata)
 
         if self._loss_weights['events'] > 0:
-            # The `text_embeddings` serve as representations for event triggers.
+            # `text_embeddings`作为事件触发器的代表。
             output_events = self._events(
                 text_mask, text_embeddings, spans, span_mask, span_embeddings,
                 sentence_lengths, trigger_labels, argument_labels,
                 ner_labels, metadata)
 
-        # Use `get` since there are some cases where the output dict won't have a loss - for
-        # instance, when doing prediction.
+        # 使用`get`，因为在某些情况下，输出的dict不会有损失--例如，在做预测的时候。
         loss = (self._loss_weights['coref'] * output_coref.get("loss", 0) +
                 self._loss_weights['ner'] * output_ner.get("loss", 0) +
                 self._loss_weights['relation'] * output_relation.get("loss", 0) +
                 self._loss_weights['events'] * output_events.get("loss", 0))
 
-        # Multiply the loss by the weight multiplier for this document.
+        # 将损失乘以该文档的权重乘数。
         weight = metadata.weight if metadata.weight is not None else 1.0
         loss *= torch.tensor(weight)
 

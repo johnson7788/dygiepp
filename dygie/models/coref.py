@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 class CorefResolver(Model):
     """
-    TODO(dwadden) document correctly.
+    指代关系
 
     Parameters
     ----------
@@ -163,12 +163,11 @@ class CorefResolver(Model):
                                 coref_labels_batched: torch.IntTensor = None,
                                 metadata=None) -> Dict[str, torch.Tensor]:
         """
-        Run the forward pass. Since we can only have coreferences between spans in the same
-        document, we loop over the documents in the batch. This function assumes that the inputs are
-        in order, but may go across documents.
+      运行前向传播。由于我们只能在同一个文档中的跨度之间有指代关系，我们在批次的文档中进行循环。
+      这个函数假定输入是按顺序进行的，但可能会跨越文件。
         """
         output_docs = {}
-        # TODO(dwadden) Update this when I implement multiple documents per minibatch.
+        # 当我实现每个mini-batch处理多个文件时，更新这个。
         doc_keys = [metadata.doc_key] * len(metadata)
         uniq_keys = []
         for entry in doc_keys:
@@ -181,7 +180,7 @@ class CorefResolver(Model):
             indices[key] = ix_list
             doc_metadata = metadata
             ix = torch.tensor(ix_list, dtype=torch.bool)
-            # If we don't have coref labels, leave as None; else get the right batch.
+            # 如果我们没有coref标签，就留作无；否则就得到正确的批次。
             coref_labels = (coref_labels_batched[ix]
                             if coref_labels_batched is not None
                             else coref_labels_batched)

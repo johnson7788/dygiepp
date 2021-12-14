@@ -25,34 +25,6 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 @Model.register("dygie")
 class DyGIE(Model):
-    """
-    TODO(dwadden) document me.
-
-    Parameters
-    ----------
-    vocab : ``Vocabulary``  从预训练模型加载的vocab
-    text_field_embedder : ``TextFieldEmbedder``
-        Used to embed the ``text`` ``TextField`` we get as input to the model.
-    context_layer : ``Seq2SeqEncoder``
-        这一层包含了文件中每个词的上下文信息。
-    feature_size: ``int``
-        所有嵌入特征的嵌入尺寸，如距离或跨度宽度。
-    submodule_params: ``TODO(dwadden)``
-        一个嵌套的字典，指定要传递给子模块初始化的参数。
-    max_span_width: ``int``
-        候选跨度的最大宽度。
-    target_task: ``str``:
-        用于作出早期停止决定的任务。
-    initializer : ``InitializerApplicator``, optional (default=``InitializerApplicator()``)
-        用于初始化模型参数。
-    module_initializer : ``InitializerApplicator``, optional (default=``InitializerApplicator()``)
-        用来初始化各个模块。
-    regularizer : ``RegularizerApplicator``, optional (default=``None``)
-        如果提供，将用于计算训练期间的正则化惩罚。
-    display_metrics: ``List[str]``.  在模型训练期间应该打印出来的指标列表
-        .
-    """
-
     def __init__(self,
                  vocab: Vocabulary,
                  embedder: TextFieldEmbedder,
@@ -67,6 +39,33 @@ class DyGIE(Model):
                  regularizer: Optional[RegularizerApplicator] = None,
                  display_metrics: List[str] = None) -> None:
         super(DyGIE, self).__init__(vocab, regularizer)
+        """
+        TODO(dwadden) document me.
+
+        Parameters
+        ----------
+        vocab : ``Vocabulary``  从预训练模型加载的vocab
+        text_field_embedder : ``TextFieldEmbedder``
+            Used to embed the ``text`` ``TextField`` we get as input to the model.
+        context_layer : ``Seq2SeqEncoder``
+            这一层包含了文件中每个词的上下文信息。
+        feature_size: ``int``
+            所有嵌入特征的嵌入尺寸，如距离或跨度宽度。
+        submodule_params: ``TODO(dwadden)``
+            一个嵌套的字典，指定要传递给子模块初始化的参数。
+        max_span_width: ``int``
+            候选跨度的最大宽度。
+        target_task: ``str``:
+            用于作出早期停止决定的任务。
+        initializer : ``InitializerApplicator``, optional (default=``InitializerApplicator()``)
+            用于初始化模型参数。
+        module_initializer : ``InitializerApplicator``, optional (default=``InitializerApplicator()``)
+            用来初始化各个模块。
+        regularizer : ``RegularizerApplicator``, optional (default=``None``)
+            如果提供，将用于计算训练期间的正则化惩罚。
+        display_metrics: ``List[str]``.  在模型训练期间应该打印出来的指标列表
+            .
+        """
 
         ####################
 
@@ -97,14 +96,11 @@ class DyGIE(Model):
         self._display_metrics = self._get_display_metrics(target_task)
         token_emb_dim = self._embedder.get_output_dim()
         span_emb_dim = self._endpoint_span_extractor.get_output_dim()
-
         ####################
-
-        # Create submodules.
-
+        # 创建子moduel
         modules = Params(modules)
 
-        # Helper function to create feedforward networks.
+        # 前馈网络函数
         def make_feedforward(input_dim):
             return FeedForward(input_dim=input_dim,
                                num_layers=feedforward_params["num_layers"],
@@ -112,26 +108,25 @@ class DyGIE(Model):
                                activations=torch.nn.ReLU(),
                                dropout=feedforward_params["dropout"])
 
-        # Submodules
-
+        # 实体识别模块， span_emb_dim： 1556， feature_size：20
         self._ner = NERTagger.from_params(vocab=vocab,
                                           make_feedforward=make_feedforward,
                                           span_emb_dim=span_emb_dim,
                                           feature_size=feature_size,
                                           params=modules.pop("ner"))
-
+        # 推理模块
         self._coref = CorefResolver.from_params(vocab=vocab,
                                                 make_feedforward=make_feedforward,
                                                 span_emb_dim=span_emb_dim,
                                                 feature_size=feature_size,
                                                 params=modules.pop("coref"))
-
+        # 关系抽取模块
         self._relation = RelationExtractor.from_params(vocab=vocab,
                                                        make_feedforward=make_feedforward,
                                                        span_emb_dim=span_emb_dim,
                                                        feature_size=feature_size,
                                                        params=modules.pop("relation"))
-
+        # 事件抽取模块
         self._events = EventExtractor.from_params(vocab=vocab,
                                                   make_feedforward=make_feedforward,
                                                   token_emb_dim=token_emb_dim,

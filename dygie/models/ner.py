@@ -18,19 +18,18 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 class NERTagger(Model):
     """
-    Named entity recognition module of DyGIE model.
+    DyGIE model的实体识别模块
 
     Parameters
     ----------
     mention_feedforward : ``FeedForward``
-        This feedforward network is applied to the span representations which is then scored
-        by a linear layer.
+    这个前馈网络适用于跨度表示，然后由一个线性层进行评分。
     feature_size: ``int``
-        The embedding size for all the embedded features, such as distances or span widths.
+       所有嵌入特征的嵌入尺寸，如距离或跨度宽度。
     lexical_dropout: ``int``
-        The probability of dropping out dimensions of the embedded text.
+        嵌入文本的dropout维度的概率
     regularizer : ``RegularizerApplicator``, optional (default=``None``)
-        If provided, will be used to calculate the regularization penalty during training.
+        如果提供，将用于计算训练期间的正则化惩罚。
     """
 
     def __init__(self,
@@ -39,24 +38,23 @@ class NERTagger(Model):
                  span_emb_dim: int,
                  regularizer: Optional[RegularizerApplicator] = None) -> None:
         super(NERTagger, self).__init__(vocab, regularizer)
-
+        # 获取对应的namespace： 'scierc__ner_labels'
         self._namespaces = [entry for entry in vocab.get_namespaces() if "ner_labels" in entry]
 
-        # Number of classes determine the output dimension of the final layer
+        # 类别的数量决定了最终层的输出维度， 这里是：7
         self._n_labels = {name: vocab.get_vocab_size(name) for name in self._namespaces}
 
-        # Null label is needed to keep track of when calculating the metrics
+        # 在计算指标时，需要有空标签来跟踪。空标签代表实体是没有类别的
         for namespace in self._namespaces:
             null_label = vocab.get_token_index("", namespace)
-            assert null_label == 0  # If not, the dummy class won't correspond to the null label.
+            assert null_label == 0, "空标签的类别索引必须是0"  # 如果不是这样，dumpy类别就不会对应于空标签。
 
-        # The output dim is 1 less than the number of labels because we don't score the null label;
-        # we just give it a score of 0 by default.
+        # 输出的dim比标签的数量少1，因为我们不给空标签打分。
+        # 我们只是默认给它打0分。
 
-        # Create a separate scorer and metric for each dataset we're dealing with.
+        # 为我们要处理的每个数据集创建一个单独的评分器和指标。
         self._ner_scorers = torch.nn.ModuleDict()
         self._ner_metrics = {}
-
         for namespace in self._namespaces:
             mention_feedforward = make_feedforward(input_dim=span_emb_dim)
             self._ner_scorers[namespace] = torch.nn.Sequential(

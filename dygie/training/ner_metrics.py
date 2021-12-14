@@ -12,7 +12,7 @@ from dygie.training.f1 import compute_f1
 
 class NERMetrics(Metric):
     """
-    Computes precision, recall, and micro-averaged F1 from a list of predicted and gold labels.
+    从预测标签和gold label的列表中计算精度、召回率和macro-averaged F1。
     """
     def __init__(self, number_of_classes: int, none_label: int=0):
         self.number_of_classes = number_of_classes

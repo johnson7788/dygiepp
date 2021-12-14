@@ -26,26 +26,23 @@ def make_pruner(scorer, entity_beam=False, gold_beam=False):
 
 class Pruner(torch.nn.Module):
     """
-    This module scores and prunes items in a list using a parameterised scoring function and a
-    threshold.
+    该模块使用一个参数化的评分函数和阈值对列表中的项目进行评分和修剪。
 
     Parameters
     ----------
     scorer : ``torch.nn.Module``, required.
-        A module which, given a tensor of shape (batch_size, num_items, embedding_size),
-        produces a tensor of shape (batch_size, num_items, 1), representing a scalar score
-        per item in the tensor.
+        一个模块，给定一个形状为（batch_size, num_items, embedding_size）的张量，产生一个形状为（batch_size, num_items, 1）的张量，代表张量中每个项目的标量得分。
     entity_beam: bool, optional.
-        If True, use class scores output from another module instead of using own scorer.
+        如果是 "True"，则使用另一个模块输出的类分数，而不是使用自己的评分器。
     gold_beam: bool, optional.
-       If True, use gold arguments.
+       如果为真，则使用glod参数。
     min_score_to_keep : float, optional.
-        If given, only keep items that score at least this high.
+        如果给定，只保留至少有这么高score的item。
     """
     def __init__(self, scorer: torch.nn.Module, entity_beam: bool = False, gold_beam: bool = False,
                  min_score_to_keep: float = None) -> None:
         super().__init__()
-        # If gold beam is on, then entity beam must be off and min_score_to_keep must be None.
+        # 如果 gold beams是开的，那么entity beams必须是关的，min_score_to_keep必须是空的。
         assert not (gold_beam and ((min_score_to_keep is not None) or entity_beam))
         self._scorer = scorer
         self._entity_beam = entity_beam

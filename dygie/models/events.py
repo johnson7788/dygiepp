@@ -20,11 +20,11 @@ from dygie.data.dataset_readers import document
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
-# TODO(dwadden) Different sentences should have different number of relation candidates depending on
-# length.
+# TODO(dwadden) 不同的句子应该有不同数量的关系候选者，这取决于长度。
+
 class EventExtractor(Model):
     """
-    Event extraction for DyGIE.
+    时间抽取模块 DyGIE.
     """
 
     def __init__(self,
@@ -49,7 +49,7 @@ class EventExtractor(Model):
         self._n_argument_labels = {name: vocab.get_vocab_size(name)
                                    for name in self._argument_namespaces}
 
-        # Make sure the null trigger label is always 0.
+        # 确保空触发器标签始终为0。
         for namespace in self._trigger_namespaces:
             null_label = vocab.get_token_index("", namespace)
             assert null_label == 0  # If not, the dummy class won't correspond to the null label.

@@ -55,18 +55,24 @@ class NERTagger(Model):
         # 为我们要处理的每个数据集创建一个单独的评分器和指标。
         self._ner_scorers = torch.nn.ModuleDict()
         self._ner_metrics = {}
-        for namespace in self._namespaces:
+        for namespace in self._namespaces:  # 这里只有一个namespace， 'scierc__ner_labels'
             mention_feedforward = make_feedforward(input_dim=span_emb_dim)
             self._ner_scorers[namespace] = torch.nn.Sequential(
                 TimeDistributed(mention_feedforward),
                 TimeDistributed(torch.nn.Linear(
                     mention_feedforward.get_output_dim(),
                     self._n_labels[namespace] - 1)))
-
+            """
+        TimeDistributed
+        给出一个形状像`(batch_size, time_steps, [rest])`的输入和一个接受像`(batch_size, [rest])`的输入的`Module`，`TimeDistributed`将输入重塑为`(batch_size * time_steps, [rest])`，应用包含的`Module`，然后将它重塑回来。
+        注意，虽然上面给出的形状是以`batch_size'为先，但如果`batch_size'为后，这个`Module'也可以工作--我们总是只合并前两个维度，然后再分割。
+        它也会重塑关键字参数，除非它们不是张量或者它们的名字在可选的`pass_through`迭代中被指定。
+            """
+            # null_label 空标签是0
             self._ner_metrics[namespace] = NERMetrics(self._n_labels[namespace], null_label)
 
         self._active_namespace = None
-
+        # 创建一个交叉熵损失
         self._loss = torch.nn.CrossEntropyLoss(reduction="sum")
 
     @overrides

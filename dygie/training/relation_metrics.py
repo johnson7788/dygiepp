@@ -7,7 +7,7 @@ from dygie.training.f1 import compute_f1
 
 class RelationMetrics(Metric):
     """
-    Computes precision, recall, and micro-averaged F1 from a list of predicted and gold spans.
+    从预测和glod跨度的列表中计算精度、召回率和微平均F1。
     """
     def __init__(self):
         self.reset()

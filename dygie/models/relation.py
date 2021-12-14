@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 # length.
 class RelationExtractor(Model):
     """
-    Relation extraction module of DyGIE model.
+    DyGIE模型的关系抽取模块。
     """
     # TODO(dwadden) add option to make `mention_feedforward` be the NER tagger.
 
@@ -35,10 +35,11 @@ class RelationExtractor(Model):
                  positive_label_weight: float = 1.0,
                  regularizer: Optional[RegularizerApplicator] = None) -> None:
         super().__init__(vocab, regularizer)
-
+        # self._namespaces: 'scierc__relation_labels'
         self._namespaces = [entry for entry in vocab.get_namespaces() if "relation_labels" in entry]
+        # {'scierc__relation_labels': 7}
         self._n_labels = {name: vocab.get_vocab_size(name) for name in self._namespaces}
-
+        # 创建模型字典，放置子模型
         self._mention_pruners = torch.nn.ModuleDict()
         self._relation_feedforwards = torch.nn.ModuleDict()
         self._relation_scorers = torch.nn.ModuleDict()

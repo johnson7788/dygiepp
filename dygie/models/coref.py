@@ -28,22 +28,19 @@ class CorefResolver(Model):
     Parameters
     ----------
     mention_feedforward : ``FeedForward``
-        This feedforward network is applied to the span representations which is then scored
-        by a linear layer.
+        这个前馈网络适用于跨度表示，然后由一个线性层进行评分。
     antecedent_feedforward: ``FeedForward``
-        This feedforward network is applied to pairs of span representation, along with any
-        pairwise features, which is then scored by a linear layer.
+        这个前馈网络适用于成对的跨度表示，同时还有任何成对的特征，然后由线性层进行评分。
     feature_size: ``int``
-        The embedding size for all the embedded features, such as distances or span widths.
+        所有嵌入特征的嵌入尺寸，如距离或跨度宽度。
     spans_per_word: float, required.
-        A multiplier between zero and one which controls what percentage of candidate mention
-        spans we retain with respect to the number of words in the document.
+        一个介于零和一之间的乘数，它控制着我们保留的候选提及跨度与文档中的字数的百分比。
     max_antecedents: int, required.
-        For each mention which survives the pruning stage, we consider this many antecedents.
+        对于每一个在修剪阶段幸存下来的提及，我们考虑这么多的前因。
     lexical_dropout: ``int``
-        The probability of dropping out dimensions of the embedded text.
+        嵌入文本的dropout维度的概率。
     regularizer : ``RegularizerApplicator``, optional (default=``None``)
-        If provided, will be used to calculate the regularization penalty during training.
+        如果提供，将用于计算训练期间的正则化惩罚。
     """
     def __init__(self,
                  vocab: Vocabulary,
@@ -57,7 +54,7 @@ class CorefResolver(Model):
                  regularizer: Optional[RegularizerApplicator] = None) -> None:
         super(CorefResolver, self).__init__(vocab, regularizer)
 
-        # 10 possible distance buckets.
+        # 10个可能的距离桶。
         self._num_distance_buckets = 10
         self._spans_per_word = spans_per_word
         self._max_antecedents = max_antecedents

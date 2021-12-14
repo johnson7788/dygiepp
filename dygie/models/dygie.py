@@ -135,11 +135,10 @@ class DyGIE(Model):
                                                   params=modules.pop("events"))
 
         ####################
-
-        # Initialize text embedder and all submodules
+        # 初始化文本嵌入器和所有子模块
         for module in [self._ner, self._coref, self._relation, self._events]:
+            # 根据regex匹配，对模块的参数应用初始化。 任何没有明确匹配的参数都不会被初始化，而是使用模块代码中的任何默认初始化。
             module_initializer(module)
-
         initializer(self)
 
     @staticmethod
@@ -175,46 +174,56 @@ class DyGIE(Model):
                 trigger_labels=None,
                 argument_labels=None):
         """
-        TODO(dwadden) change this.
+        :params text: {"bert": {"token_ids", "mask", "type_ids", "wordpiece_mask",}}
+        token_ids: shape: [1,4,47], 【文档数，句子数，单词数】
         """
-        # In AllenNLP, AdjacencyFields are passed in as floats. This fixes it.
+        # 在AllenNLP中，AdjacencyFields是以浮点数形式传递的。这就解决了这个问题。
+        # relation_labels类型转换，shape: [1,4,268,268]，
         if relation_labels is not None:
             relation_labels = relation_labels.long()
         if argument_labels is not None:
             argument_labels = argument_labels.long()
-
-        # TODO(dwadden) Multi-document minibatching isn't supported yet. For now, get rid of the
-        # extra dimension in the input tensors. Will return to this once the model runs.
+        # 目前还不支持多文档的mini batch。目前，摆脱了输入张量中的额外维度。一旦模型运行，将回到这个问题上。
         if len(metadata) > 1:
-            raise NotImplementedError("Multi-document minibatching not yet supported.")
-
+            raise NotImplementedError("尚不支持多文档mini-batch处理。")
+        # metadata是一篇文档中的内容
         metadata = metadata[0]
-        spans = self._debatch(spans)  # (n_sents, max_n_spans, 2)
-        ner_labels = self._debatch(ner_labels)  # (n_sents, max_n_spans)
-        coref_labels = self._debatch(coref_labels)  #  (n_sents, max_n_spans)
-        relation_labels = self._debatch(relation_labels)  # (n_sents, max_n_spans, max_n_spans)
+        spans = self._debatch(spans)  #_debatch函数去掉文档的维度1， (n_sents, max_n_spans, 2) eg： 【4，268，2】
+        ner_labels = self._debatch(ner_labels)  # (n_sents, max_n_spans) 【4，268】
+        coref_labels = self._debatch(coref_labels)  #  (n_sents, max_n_spans) 【4，268】
+        relation_labels = self._debatch(relation_labels)  # (n_sents, max_n_spans, max_n_spans)  【4，268， 268】
         trigger_labels = self._debatch(trigger_labels)  # TODO(dwadden)
         argument_labels = self._debatch(argument_labels)  # TODO(dwadden)
 
-        # Encode using BERT, then debatch.
-        # Since the data are batched, we use `num_wrapping_dims=1` to unwrap the document dimension.
-        # (1, n_sents, max_sententence_length, embedding_dim)
+        # 使用BERT进行编码，然后进行debatch
+        # 由于数据是分批的，我们使用`num_wrapping_dims=1`来debatch文档维度。
+        # (1, n_sents, max_sententence_length, embedding_dim) ，1 代表文档数量
+        # n_sents：句子数量， max_sententence_length：最大句子长度，embedding_dim：嵌入维度
 
-        # TODO(dwadden) Deal with the case where the input is longer than 512.
+        # TODO处理输入长度超过512的情况。
         text_embeddings = self._embedder(text, num_wrapping_dims=1)
-        # (n_sents, max_n_wordpieces, embedding_dim)
+        # (n_sents, max_n_wordpieces, embedding_dim)， 形状 【4，37，768】
         text_embeddings = self._debatch(text_embeddings)
 
         # (n_sents, max_sentence_length)
+        """
+        AllenNLP中的util的 get_text_field_mask: 函数
+        接收由`TextField`产生的张量字典，并返回一个mask，其中0是填充的token，否则是1。`padding_id`指定了填充token的id。    
+        我们也处理被任意数量的 "ListField "包裹的 "TextField"，其中包裹的 "ListField "的数量由 "num_wrapping_dims "给出。     
+        如果`num_wrapping_dims == 0`，返回的mask形状为`(batch_size, num_tokens)`。   
+        如果`num_wrapping_dims > 0`，那么返回的mask有`num_wrapping_dims`的额外维度，
+        所以形状将是`(batch_size, ..., num_tokens)`。    
+        张量字典中可能有几个具有不同形状的条目（例如，一个用于单词ID，一个用于字符ID）。 为了得到一个token mask，我们使用字典中维度最少的张量。 在减去`num_wrapping_dims'后，如果这个张量有两个维度，我们假定它的形状是`(batch_size, ..., num_tokens)`，并使用它作为mask。 
+        如果它有三个维度，我们假定它的形状是`(batch_size, ..., num_tokens, num_features)`，并在最后一个维度上求和，以产生mask。 
+        最常见的是一个字符ID张量，但它也可以是每个token的特征表示，等等。     
+        如果输入的`text_field_tensors`包含 "mask "键，将返回这个键而不是推理出mask。
+        """
         text_mask = self._debatch(util.get_text_field_mask(text, num_wrapping_dims=1).float())
+        # 文本真实的长度， eg： tensor([37, 26, 37, 17], device='cuda:0')
         sentence_lengths = text_mask.sum(dim=1).long()  # (n_sents)
 
         span_mask = (spans[:, :, 0] >= 0).float()  # (n_sents, max_n_spans)
-        # SpanFields return -1 when they are used as padding. As we do some comparisons based on
-        # span widths when we attend over the span representations that we generate from these
-        # indices, we need them to be <= 0. This is only relevant in edge cases where the number of
-        # spans we consider after the pruning stage is >= the total number of spans, because in this
-        # case, it is possible we might consider a masked span.
+        # SpanFields在被用作填充时返回 - 1。由于我们在参加由这些索引生成的跨度表示时，根据跨度宽度进行了一些比较，我们需要它们 <= 0。这只与我们在剪枝阶段后考虑的跨度数量 >= 跨度总数的边缘情况有关，因为在这种情况下，我们有可能考虑一个被mask的跨度。
         spans = F.relu(spans.float()).long()  # (n_sents, max_n_spans, 2)
 
         # Shape: (batch_size, num_spans, 2 * encoding_dim + feature_size)

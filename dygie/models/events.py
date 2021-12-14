@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 class EventExtractor(Model):
     """
-    时间抽取模块 DyGIE.
+    事件抽取模块 DyGIE.
     """
 
     def __init__(self,
@@ -38,9 +38,10 @@ class EventExtractor(Model):
                  loss_weights: Dict[str, float],
                  regularizer: Optional[RegularizerApplicator] = None) -> None:
         super(EventExtractor, self).__init__(vocab, regularizer)
-
+        #  触发词
         self._trigger_namespaces = [entry for entry in vocab.get_namespaces()
                                     if "trigger_labels" in entry]
+        # 论据
         self._argument_namespaces = [entry for entry in vocab.get_namespaces()
                                      if "argument_labels" in entry]
 
@@ -76,8 +77,7 @@ class EventExtractor(Model):
             # The argument pruner.
             mention_feedforward = make_feedforward(input_dim=span_emb_dim)
             self._mention_pruners[argument_namespace] = make_pruner(mention_feedforward)
-            # The argument scorer. The `+ 2` is there because I include indicator features for
-            # whether the trigger is before or inside the arg span.
+            # 参数评分器。`+ 2`的存在是因为我包括了触发器在参数跨度之前或之内的指标特征。
 
             # TODO(dwadden) Here
             argument_feedforward_dim = token_emb_dim + span_emb_dim + feature_size + 2
@@ -86,7 +86,7 @@ class EventExtractor(Model):
             self._argument_scorers[argument_namespace] = torch.nn.Linear(
                 argument_feedforward.get_output_dim(), self._n_argument_labels[argument_namespace])
 
-        # Weight on trigger labeling and argument labeling.
+        # 触发标签和论据标签的权重。
         self._loss_weights = loss_weights
 
         # Distance embeddings.
